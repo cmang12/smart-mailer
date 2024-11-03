@@ -1,32 +1,40 @@
 import csv
 import re
 import argparse
+import time
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 class Mailer:
-    # Regular expression pattern to validate an email address
     EMAIL_REGEX = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 
-    def __init__(self, csv_file, department_code):
+    def __init__(self, csv_file, department_code, subject, body_template):
         self.csv_file = csv_file
         self.department_code = department_code
+        self.subject = subject
+        self.body_template = body_template
+        self.smtp_server = "smtp.gmail.com"
+        self.smtp_port = 587
+        self.username = "carmen.ang12@gmail.com"  
+        self.password = "ttfxtyyjfomdcxin"  
         self.recipients = []
+        self.batch_size = 10  # Number of emails to send before delay
+        self.delay = 2  # Delay time in seconds
 
     def is_valid_email(self, email):
-        """Check if the email address is in valid format."""
         return re.match(self.EMAIL_REGEX, email) is not None
 
     def parse_csv(self):
-        """Parse the CSV file and filter recipients based on the department code."""
         with open(self.csv_file, mode='r') as file:
             csv_reader = csv.DictReader(file)
 
             for row in csv_reader:
-                # Check if email is valid
                 if not self.is_valid_email(row['email']):
                     print(f"Invalid email found and skipped: {row['email']}")
                     continue
-
-                # Filter by department code
+                
+                # Case insensitive
                 if self.department_code.lower() == "all" or row['department_code'].lower() == self.department_code.lower():
                     self.recipients.append({
                         'email': row['email'],
@@ -35,7 +43,6 @@ class Mailer:
                     })
 
     def display_recipients(self):
-        
         if not self.recipients:
             print("\nNo emails with matching department code.")
         else: 
@@ -43,21 +50,58 @@ class Mailer:
             for recipient in self.recipients:
                 print(f"Email: {recipient['email']}, Name: {recipient['name']}, Department: {recipient['department_code']}")
 
+    def personalize_content(self, recipient):
+        body = self.body_template.replace("#name#", recipient['name']).replace("#department#", recipient['department_code'])
+        return body 
+
+    def send_email(self, recipient):
+        msg = MIMEMultipart()
+        msg['From'] = self.username
+        msg['To'] = recipient['email']
+        msg['Subject'] = self.subject
+
+        body = self.personalize_content(recipient)
+        msg.attach(MIMEText(body, 'html'))
+
+        try:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.username, self.password)
+                server.sendmail(self.username, recipient['email'], msg.as_string())
+            print(f"Email sent to {recipient['email']}")
+            return True
+        except Exception as e:
+            print(f"Failed to send email to {recipient['email']}: {e}")
+            return False
+        
+    def send_emails(self):
+        for index, recipient in enumerate(self.recipients):
+            self.send_email(recipient)
+            
+            # Check if the batch limit is reached 
+            if (index + 1) % self.batch_size == 0:
+                # Add delay if reached
+                time.sleep(self.delay)  
+        
 def main():
-    # Set up argument parsing
-    # Usage: python mailer.py <department code>
-    # OR to get all emails: python mailer.py all
     parser = argparse.ArgumentParser(description="Smart Mailer Program")
     parser.add_argument("csvfile")
     parser.add_argument("department_code")
+    parser.add_argument("subject")  
+    parser.add_argument("body_template")  
     
-    # Parse the arguments
     args = parser.parse_args()
     csv_file = args.csvfile
     department_code = args.department_code
+    subject = args.subject
+    body_template_file = args.body_template 
+
+    # Read the html template from a .txt file
+    with open(body_template_file, 'r') as f:
+        body_template = f.read()
 
     # Initialize Mailer class
-    mailer = Mailer(csv_file, department_code)
+    mailer = Mailer(csv_file, department_code, subject, body_template)
     
     # Parse CSV 
     mailer.parse_csv()
@@ -65,5 +109,10 @@ def main():
     # Print recipients 
     mailer.display_recipients()
 
+    # Send emails to recipients 
+    mailer.send_emails()
+
 if __name__ == "__main__":
+    # Usage
+    # python mailer.py maildata.csv <Department Code> <Subject> <body file>.txt
     main()
