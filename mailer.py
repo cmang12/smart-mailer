@@ -31,8 +31,10 @@ class Mailer:
         self.username = os.getenv("EMAIL_USERNAME")
         self.password = os.getenv("EMAIL_PASSWORD")
         self.recipients = []
-        self.batch_size = 10  # Number of emails to send before delay
-        self.delay = 2  # Delay time in seconds
+        self.batch_size = 30  # Number of emails to send before delay
+        self.delay = 2  # Delay time in seconds between batches
+        self.retry_attempts = 3  # Maximum retry attempts for each email
+        self.backoff_factor = 2  # Exponential backoff factor for retries
 
     def is_valid_email(self, email):
         return re.match(self.EMAIL_REGEX, email) is not None
@@ -47,15 +49,13 @@ class Mailer:
                     continue
 
                 # Case insensitive
-                if (
-                    self.department_code.lower() == "all"
-                    or row["department_code"].lower() == self.department_code.lower()
-                ):
+                if (self.department_code.upper() == "ALL" or 
+                    row["department_code"].upper() == self.department_code.upper()):
                     self.recipients.append(
                         {
-                            "email": row["email"],
-                            "name": row["name"],
-                            "department_code": row["department_code"],
+                        "email": row["email"],
+                        "name": row["name"],
+                        "department_code": row["department_code"].upper(),
                         }
                     )
 
@@ -67,7 +67,7 @@ class Mailer:
             for recipient in self.recipients:
                 print(
                     f"Email: {recipient['email']}, Name: {recipient['name']}, Department: {recipient['department_code']}"
-                )
+                    )
 
     def personalize_content(self, recipient):
         body_lines = self.body_template.split("\n")
@@ -92,29 +92,40 @@ class Mailer:
         msg["From"] = self.username
         msg["To"] = recipient["email"]
         msg["Subject"] = self.subject
-
+        
         body = self.personalize_content(recipient)
         msg.attach(MIMEText(body, "html"))
 
-        try:
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.username, self.password)
-                server.sendmail(self.username, recipient["email"], msg.as_string())
-            print(f"Email sent to {recipient['email']}")
-            self.insert_into_email_history(
-                recipient["email"], recipient["department_code"]
-            )
-            return True
-        except Exception as e:
-            print(f"Failed to send email to {recipient['email']}: {e}")
-            return False
+        # Retry send for number of self.retry_attempts if it fails
+        for attempt in range(self.retry_attempts):
+            try:
+                with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                    server.starttls()
+                    server.login(self.username, self.password)
+                    server.sendmail(self.username, recipient["email"], msg.as_string())
+                print(f"Email sent to {recipient['email']}")
+                self.insert_into_email_history(recipient["email"], recipient["department_code"])
+                return True
+            
+            except Exception as e:
+                print(f"Failed to send email to {recipient['email']} on attempt {attempt + 1}: {e}")
+
+                if attempt < self.retry_attempts - 1:
+
+                    # The delay between retries increases exponentially based on the retry attempt number.
+                    time.sleep(self.delay * (self.backoff_factor ** attempt))  
+                    
+        return False
 
     def send_emails(self):
-        for index, recipient in enumerate(self.recipients):
-            self.send_email(recipient)
 
-            # Check if the batch limit is reached
+        # Send each email 
+        for index, recipient in enumerate(self.recipients):
+            success = self.send_email(recipient)
+            
+            if not success:
+                print(f"Failed sending email to {recipient['email']} after {self.retry_attempts} attempts.")
+            
             if (index + 1) % self.batch_size == 0:
                 # Add delay if reached
                 time.sleep(self.delay)
@@ -134,7 +145,6 @@ class Mailer:
             )
         except requests.exceptions.RequestException as e:
             print(f"insert_into_email_history error: {e}")
-
 
 def main():
     parser = argparse.ArgumentParser(description="Smart Mailer Program")
@@ -195,5 +205,6 @@ def main():
 
 if __name__ == "__main__":
     # Usage
-    # python mailer.py maildata.csv <Department Code> <Subject> <body file>.txt
+    # To send emails: python mailer.py maildata.csv <Department Code> <Subject> <body file>.txt
+    # To fetch analytics: python mailer.py analytics
     main()
