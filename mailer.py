@@ -11,6 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from uuid import uuid4
 from const import API_URL
 from dotenv import load_dotenv
+from utils import encode_key
 
 from get_info import get_email_count_by_department, get_tracking_information
 
@@ -142,8 +143,10 @@ class Mailer:
             resp = requests.post(
                 f"{API_URL}email-history",
                 json=request_data,
+                headers={"Authorization": f"Bearer {os.environ.get("APP_KEY")}"},
             )
-        except requests.exceptions.RequestException as e:
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
             print(f"insert_into_email_history error: {e}")
 
 def main():
