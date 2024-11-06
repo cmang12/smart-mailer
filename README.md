@@ -51,6 +51,57 @@ To retrieve email analytics, use the `analytics` mode. No additional arguments a
 ```bash
 python mailer.py analytics
 ```
+
+#### Example Output for Analytics Mode
+
+When running the `analytics` mode, the program provides two sections:
+
+1. **Email Open Count**: This section tracks how many users opened each email. It provides details such as:
+   - `count`: The number of users who opened the email.
+   - `email_id`: A unique identifier for each email.
+   - `email_subject`: The subject of the email.
+   - `latest_created_at`: The timestamp of the most recent open event.
+
+   **Example:**
+   ```plaintext
+   EMAIL OPEN COUNT
+   +---------+--------------------------------------+-------------------------+-------------------------------+
+   |   count | email_id                             | email_subject           | latest_created_at             |
+   +=========+======================================+=========================+===============================+
+   |       2 | 099277f6-aa70-4d99-bc5a-478e9d7f77cb | Monthly Report           | Wed, 06 Nov 2024 11:35:08 GMT |
+   +---------+--------------------------------------+-------------------------+-------------------------------+
+   |       3 | f10881d0-3333-41ae-8231-d0993e8937cd | New Product Launch       | Wed, 06 Nov 2024 11:16:03 GMT |
+   +---------+--------------------------------------+-------------------------+-------------------------------+
+   |       1 | 7a37b701-ddcb-41aa-a9eb-30efcf645f94 | Weekly Update            | Wed, 06 Nov 2024 10:02:04 GMT |
+   +---------+--------------------------------------+-------------------------+-------------------------------+
+   ```
+   In this example:
+    - The email with `email_id = f10881d0-3333-41ae-8231-d0993e8937cd` (subject: `New Product Launch`) was opened by 3 users, with the last open recorded at `Wed, 06 Nov 2024 11:16:03 GMT`.
+    - The email with `email_id = 7a37b701-ddcb-41aa-a9eb-30efcf645f94` (subject: `Weekly Update`) was opened by 1 user.
+
+2. **Email Count by Department**: This section shows the total number of emails sent by each department code. The `ALL` department is excluded from the output.
+
+   **Example:**
+   ```plaintext
+   EMAIL COUNT BY DEPARTMENT
+   +---------+-------------------+
+   |   count | department_code   |
+   +=========+===================+
+   |       5 | eng               |
+   +---------+-------------------+
+   |      14 | SOC               |
+   +---------+-------------------+
+   |       2 | MED               |
+   +---------+-------------------+
+   |       3 | CEG               |
+   +---------+-------------------+
+   |       8 | FASS              |
+   +---------+-------------------+
+   ```
+   In this case:
+    - The department `SOC` sent the most emails (14).
+    - The department `FASS` sent 8 emails.
+
 ### Error Handling
 
 If an error occurs during data retrieval in `analytics` mode, an error message will be displayed, and the program will exit with a non-zero code.
