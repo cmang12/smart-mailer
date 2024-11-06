@@ -34,7 +34,6 @@
         <p>As a member of #department# department you are invited to NUS Career Fair!</p>
         <p>If you have any questions, feel free to reach out to us.</p>
         <p>Best regards,<br>NUS Office</p>
-        <img src="https://your-server.com/1x1pixel.png" alt="" style="display:none;">
     </div>
 </body>
 </html>
