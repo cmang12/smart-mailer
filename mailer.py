@@ -1,4 +1,5 @@
 import csv
+import sys
 import re
 import os
 import argparse
@@ -10,6 +11,8 @@ from email.mime.multipart import MIMEMultipart
 from uuid import uuid4
 from const import API_URL
 from dotenv import load_dotenv
+
+from get_info import get_email_count_by_department, get_tracking_information
 
 load_dotenv()
 
@@ -135,12 +138,39 @@ class Mailer:
 
 def main():
     parser = argparse.ArgumentParser(description="Smart Mailer Program")
+    parser.add_argument(
+        "mode",
+        choices=["send", "analytics"],
+        help="Choose the mode: 'send' to send an email, 'get' to get email analytics",
+    )
+
+    args = parser.parse_args(sys.argv[1:2])
+    mode = args.mode
+
+    if mode == "analytics":
+        try:
+            print(get_tracking_information())
+            print("\n")
+            print(get_email_count_by_department())
+            exit(0)
+        except Exception as e:
+            print(f"Error in retrieving data")
+            exit(1)
+
+    parser = argparse.ArgumentParser(description="Send Emails Parser")
+
+    parser.add_argument(
+        "mode",
+        choices=["send"],
+        help="Choose the mode: 'send' to send an email, 'get' to get email analytics",
+    )
     parser.add_argument("csvfile")
     parser.add_argument("department_code")
     parser.add_argument("subject")
     parser.add_argument("body_template")
 
     args = parser.parse_args()
+
     csv_file = args.csvfile
     department_code = args.department_code
     subject = args.subject
