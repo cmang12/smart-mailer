@@ -1,1 +1,1 @@
-API_URL = "https://bulk-mailer-backend.vercel.app/"
+API_URL = "https://smart-mailer-backend.vercel.app/"
