@@ -114,7 +114,7 @@ class Mailer:
 
                     # The delay between retries increases exponentially based on the retry attempt number.
                     time.sleep(self.delay * (self.backoff_factor ** attempt))  
-                    
+
         return False
 
     def send_emails(self):
@@ -205,6 +205,6 @@ def main():
 
 if __name__ == "__main__":
     # Usage
-    # To send emails: python mailer.py maildata.csv <Department Code> <Subject> <body file>.txt
+    # To send emails: python mailer.py send maildata.csv <Department Code> <Subject> <body file>.txt
     # To fetch analytics: python mailer.py analytics
     main()
