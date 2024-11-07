@@ -41,8 +41,8 @@ class Mailer:
         self.username = os.getenv("EMAIL_USERNAME") # Email sender credentials
         self.password = os.getenv("EMAIL_PASSWORD")
         self.recipients = []
-        self.batch_size = 30  # Number of emails to send before delay
-        self.delay = 2  # Delay time in seconds between batches
+        self.batch_size = 25  # Number of emails to send before delay
+        self.delay = 10  # Delay time in seconds between batches
         self.retry_attempts = 3  # Maximum retry attempts for each email
         self.backoff_factor = 2  # Exponential backoff factor for retries
 
@@ -189,7 +189,7 @@ def main():
     """
     Main function to run the mailer program, which can send emails or retrieve analytics.
     """
-    
+
     parser = argparse.ArgumentParser(description="Smart Mailer Program")
 
     # Add a positional argument for the mode with choices "send" or "analytics".
