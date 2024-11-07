@@ -19,11 +19,18 @@ load_dotenv()
 
 
 class Mailer:
+    """
+    Class to handle the bulk email sending process, including recipient validation,
+    email content personalization, and logging of sent emails.
+    """
 
     # Define a regular expression for email validation.
     EMAIL_REGEX = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 
     def __init__(self, csv_file, department_code, subject, body_template):
+        """
+        Initialize Mailer with provided configurations for email sending.
+        """
         self.email_id = str(uuid4()) # Unique ID for each email session
         self.csv_file = csv_file 
         self.department_code = department_code
@@ -40,10 +47,16 @@ class Mailer:
         self.backoff_factor = 2  # Exponential backoff factor for retries
 
     def is_valid_email(self, email):
+        """
+        Check if an email address is valid.
+        """
         return re.match(self.EMAIL_REGEX, email) is not None
 
     def parse_csv(self):
-        # Parse CSV file and filter recipients based on department code.
+        """
+        Parse the CSV file and filter recipients based on the department code.
+        Adds valid recipients to the self.recipients list.
+        """
         with open(self.csv_file, mode="r") as file:
             csv_reader = csv.DictReader(file)
 
@@ -64,7 +77,9 @@ class Mailer:
                     )
 
     def display_recipients(self):
-        # Display the list of valid recipients.
+        """
+        Display the list of valid recipients.
+        """
 
         if not self.recipients:
             print("\nNo emails with matching department code.")
@@ -76,8 +91,9 @@ class Mailer:
                     )
 
     def personalize_content(self, recipient):
-        # Customize the email body template for each recipient.
-
+        """
+        Customize the email body template for each recipient.
+        """
         body_lines = self.body_template.split("\n")
 
         # Insert tracking pixel to html body
@@ -98,8 +114,10 @@ class Mailer:
         return body
 
     def send_email(self, recipient):
-            
-        # Prepare and send an email to a recipient.
+        """
+        Prepare and send an email to a single recipient, with retry logic.
+        """    
+        
         msg = MIMEMultipart()
         msg["From"] = self.username
         msg["To"] = recipient["email"]
@@ -131,8 +149,10 @@ class Mailer:
         return False
 
     def send_emails(self):
+        """
+        Send emails to all recipients in the list, applying a batching delay mechanism.
+        """
 
-        # Send emails to all recipients with batching delay mechanism. 
         for index, recipient in enumerate(self.recipients):
             success = self.send_email(recipient)
             
@@ -144,6 +164,10 @@ class Mailer:
                 time.sleep(self.delay)
 
     def insert_into_email_history(self, email, department_code):
+        """
+        Log sent emails by sending data to the database.
+        """
+        
         request_data = {
             "email_id": self.email_id,
             "recipient_email": email,
@@ -162,7 +186,10 @@ class Mailer:
             print(f"insert_into_email_history error: {e}")
 
 def main():
-    # Create the main argument parser for the smart mailer program with description.
+    """
+    Main function to run the mailer program, which can send emails or retrieve analytics.
+    """
+    
     parser = argparse.ArgumentParser(description="Smart Mailer Program")
 
     # Add a positional argument for the mode with choices "send" or "analytics".
