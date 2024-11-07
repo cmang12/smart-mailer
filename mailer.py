@@ -19,17 +19,19 @@ load_dotenv()
 
 
 class Mailer:
+
+    # Define a regular expression for email validation.
     EMAIL_REGEX = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 
     def __init__(self, csv_file, department_code, subject, body_template):
-        self.email_id = str(uuid4())
-        self.csv_file = csv_file
+        self.email_id = str(uuid4()) # Unique ID for each email session
+        self.csv_file = csv_file 
         self.department_code = department_code
         self.subject = subject
         self.body_template = body_template
         self.smtp_server = "smtp.gmail.com"
-        self.smtp_port = 587
-        self.username = os.getenv("EMAIL_USERNAME")
+        self.smtp_port = 587 # SMTP port for TLS
+        self.username = os.getenv("EMAIL_USERNAME") # Email sender credentials
         self.password = os.getenv("EMAIL_PASSWORD")
         self.recipients = []
         self.batch_size = 30  # Number of emails to send before delay
@@ -41,6 +43,7 @@ class Mailer:
         return re.match(self.EMAIL_REGEX, email) is not None
 
     def parse_csv(self):
+        # Parse CSV file and filter recipients based on department code.
         with open(self.csv_file, mode="r") as file:
             csv_reader = csv.DictReader(file)
 
@@ -49,7 +52,7 @@ class Mailer:
                     print(f"Invalid email found and skipped: {row['email']}")
                     continue
 
-                # Case insensitive
+                # Add recipient if department code matches or if "ALL" is specified (case insensitive).
                 if (self.department_code.upper() == "ALL" or 
                     row["department_code"].upper() == self.department_code.upper()):
                     self.recipients.append(
@@ -61,6 +64,8 @@ class Mailer:
                     )
 
     def display_recipients(self):
+        # Display the list of valid recipients.
+
         if not self.recipients:
             print("\nNo emails with matching department code.")
         else:
@@ -71,7 +76,11 @@ class Mailer:
                     )
 
     def personalize_content(self, recipient):
+        # Customize the email body template for each recipient.
+
         body_lines = self.body_template.split("\n")
+
+        # Insert tracking pixel to html body
         for idx, line in enumerate(body_lines):
             if "</body>" in line:
                 body_lines.insert(
@@ -79,7 +88,7 @@ class Mailer:
                     f'<img src="{API_URL}tracking/pixel?recipient_email={recipient['email']}&email_id={self.email_id}" alt="" style="display:none;">',
                 )
                 break
-
+        # Replace placeholders in template with recipient's info.
         body = (
             "\n".join(body_lines)
             .replace("#name#", recipient["name"])
@@ -89,6 +98,8 @@ class Mailer:
         return body
 
     def send_email(self, recipient):
+            
+        # Prepare and send an email to a recipient.
         msg = MIMEMultipart()
         msg["From"] = self.username
         msg["To"] = recipient["email"]
@@ -97,7 +108,7 @@ class Mailer:
         body = self.personalize_content(recipient)
         msg.attach(MIMEText(body, "html"))
 
-        # Retry send for number of self.retry_attempts if it fails
+        # Attempt to send the email, with retries on failure.
         for attempt in range(self.retry_attempts):
             try:
                 with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
@@ -116,11 +127,12 @@ class Mailer:
                     # The delay between retries increases exponentially based on the retry attempt number.
                     time.sleep(self.delay * (self.backoff_factor ** attempt))  
 
+        # Return False if email fails to send on all attempts. 
         return False
 
     def send_emails(self):
 
-        # Send each email 
+        # Send emails to all recipients with batching delay mechanism. 
         for index, recipient in enumerate(self.recipients):
             success = self.send_email(recipient)
             
@@ -128,7 +140,7 @@ class Mailer:
                 print(f"Failed sending email to {recipient['email']} after {self.retry_attempts} attempts.")
             
             if (index + 1) % self.batch_size == 0:
-                # Add delay if reached
+                # Add delay if batch size is reached
                 time.sleep(self.delay)
 
     def insert_into_email_history(self, email, department_code):
@@ -150,16 +162,22 @@ class Mailer:
             print(f"insert_into_email_history error: {e}")
 
 def main():
+    # Create the main argument parser for the smart mailer program with description.
     parser = argparse.ArgumentParser(description="Smart Mailer Program")
+
+    # Add a positional argument for the mode with choices "send" or "analytics".
+    # "send" mode sends emails, while "analytics" retrieves email analytics.
     parser.add_argument(
         "mode",
         choices=["send", "analytics"],
         help="Choose the mode: 'send' to send an email, 'get' to get email analytics",
     )
 
+    # Parse the mode argument from the command line.
     args = parser.parse_args(sys.argv[1:2])
     mode = args.mode
 
+    # If the mode is "analytics", fetch and display email tracking information and exit. 
     if mode == "analytics":
         try:
             print(get_tracking_information())
@@ -170,13 +188,16 @@ def main():
             print(f"Error in retrieving data")
             exit(1)
 
+    # For "send" mode, create a new argument parser for sending emails.
     parser = argparse.ArgumentParser(description="Send Emails Parser")
 
+    # Define arguments required in "send" mode.
     parser.add_argument(
         "mode",
         choices=["send"],
         help="Choose the mode: 'send' to send an email, 'get' to get email analytics",
     )
+    
     parser.add_argument("csvfile")
     parser.add_argument("department_code")
     parser.add_argument("subject")

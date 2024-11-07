@@ -10,6 +10,12 @@ headers = {"Authorization": f"Bearer {os.environ.get("APP_KEY")}"}
 
 
 def get_tracking_information():
+
+    """
+    Fetches email tracking information from the API, including email open counts.
+    Returns a formatted string with the data displayed in a grid format.
+    """
+
     try:
         resp = requests.get(f"{API_URL}tracking/counter", headers=headers)
         resp.raise_for_status()
@@ -22,6 +28,12 @@ def get_tracking_information():
 
 
 def get_email_count_by_department():
+    
+    """
+    Fetches the count of emails sent by department from the API.
+    Returns a formatted string with the data displayed in a grid format.
+    """
+
     try:
         resp = requests.get(f"{API_URL}email-count-by-dept", headers=headers)
         resp.raise_for_status()
