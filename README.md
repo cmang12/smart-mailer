@@ -4,7 +4,7 @@
 
 The `Smart Mailer Program` allows you to:
 1. Send emails to a list of recipients to specific departments from a CSV file.
-2. Retrieve email analytics, which provides a tracking counter for the number of users who opened the email and the number of emails sent by department code.
+2. Retrieve email analytics, which provides a tracking counter for the number of recipients who opened the email blast and the number of emails sent by department code.
 
 
 ### Architecture Diagram
@@ -56,8 +56,8 @@ python mailer.py analytics
 
 When running the `analytics` mode, the program provides two sections:
 
-1. **Email Open Count**: This section tracks how many users opened each email. It provides details such as:
-   - `count`: The number of users who opened the email.
+1. **Email Open Count**: This section tracks how many recipients opened a specific email blast. It provides details such as:
+   - `count`: The number of recipients who opened the email.
    - `email_id`: A unique identifier for each email.
    - `email_subject`: The subject of the email.
    - `latest_created_at`: The timestamp of the most recent open event.
@@ -76,10 +76,10 @@ When running the `analytics` mode, the program provides two sections:
    +---------+--------------------------------------+-------------------------+-------------------------------+
    ```
    In this example:
-    - The email with `email_id = f10881d0-3333-41ae-8231-d0993e8937cd` (subject: `New Product Launch`) was opened by 3 users, with the last open recorded at `Wed, 06 Nov 2024 11:16:03 GMT`.
-    - The email with `email_id = 7a37b701-ddcb-41aa-a9eb-30efcf645f94` (subject: `Weekly Update`) was opened by 1 user.
+    - The email with `email_id = f10881d0-3333-41ae-8231-d0993e8937cd` (subject: `New Product Launch`) was opened by 3 recipients, with the last open recorded at `Wed, 06 Nov 2024 11:16:03 GMT`.
+    - The email with `email_id = 7a37b701-ddcb-41aa-a9eb-30efcf645f94` (subject: `Weekly Update`) was opened by 1 recipient.
 
-2. **Email Count by Department**: This section shows the total number of emails sent by each department code. The `ALL` department is excluded from the output.
+2. **Email Count by Department**: This section shows the total number of emails sent by each department code.
 
    **Example:**
    ```plaintext
